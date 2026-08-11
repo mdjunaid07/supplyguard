@@ -1,0 +1,57 @@
+version: '3.9'
+
+services:
+  # ── MongoDB ────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: supplyguard-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: supplyguard
+
+  # ── Backend (FastAPI) ──────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: supplyguard-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      # Override MONGO_URI to use Docker service name
+      MONGO_URI: mongodb://mongodb:27017
+    volumes:
+      - ./private-key.pem:/app/private-key.pem:ro
+      - ./ml-model/models:/app/ml-model/models
+    depends_on:
+      - mongodb
+    command: >
+      sh -c "
+        if [ ! -f /app/ml-model/models/model.pkl ]; then
+          echo 'Training ML model...';
+          python ml-model/train.py;
+        fi &&
+        uvicorn backend.main:app --host 0.0.0.0 --port 8000
+      "
+
+  # ── Frontend (React → nginx) ───────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: supplyguard-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+    driver: local

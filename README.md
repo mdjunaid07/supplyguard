@@ -94,6 +94,7 @@ supplyguard/
 ├── .env                          ← YOUR SECRETS GO HERE (you create this)
 ├── .env.example                  ← Template showing all required variables
 ├── docker-compose.yml            ← Run everything with one command
+├── .gitignore
 │
 ├── backend/                      ← Python FastAPI server
 │   ├── main.py                   ← App entry point

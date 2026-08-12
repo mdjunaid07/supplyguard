@@ -1,5 +1,47 @@
  # 🔐 SupplyGuard — AI Supply Chain Attack Intelligence Engine
 
+## 🛡️ What is SupplyGuard?
+
+**SupplyGuard is a proactive software supply chain security system that analyzes
+open-source dependencies introduced through GitHub Pull Requests and identifies
+dependencies that may pose a security risk.**
+
+Modern applications rely heavily on third-party packages. A package can appear
+legitimate and have no known CVE, yet still become dangerous due to suspicious
+maintainer activity, unusual releases, compromised accounts, or risky dependency
+relationships.
+
+SupplyGuard is designed to provide an additional layer of intelligence **before
+a dependency is merged into the project.**
+
+### Why was it built?
+
+Traditional dependency security tools are largely focused on **known
+vulnerabilities**. But a supply chain attack does not necessarily begin with a
+known vulnerability.
+
+An attacker may compromise a maintainer account, inject malicious code into a
+legitimate package, or publish a suspicious new version before the activity is
+recognized as a security incident.
+
+**SupplyGuard addresses this gap by looking beyond CVEs.**
+
+### What does it do?
+
+When a dependency is added or updated in a Pull Request, SupplyGuard collects
+security and behavioral information from multiple sources, analyzes the package
+using an ML-based risk engine and dependency-graph trust analysis, and produces
+a risk assessment.
+
+The result is delivered directly to the developer as an automated **GitHub PR
+security report** and is also stored for visualization and analysis in the
+SupplyGuard dashboard.
+
+### In one sentence
+
+> **SupplyGuard turns a dependency update into a security intelligence decision
+> before that dependency becomes part of the application.**
+
 > **Detect risky npm dependencies in Pull Requests *before* vulnerabilities are publicly known.**
 > Uses behavioral ML analysis, graph-based trust scoring, and multi-source data collection to automatically comment risk reports on GitHub PRs.
 
@@ -26,6 +68,10 @@
 10. [Troubleshooting](#-troubleshooting)
 
 ---
+
+
+
+
 
 ## 🎯 What This System Does
 

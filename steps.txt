@@ -1,0 +1,102 @@
+================================================================================
+SupplyGuard — Real-Time Setup, Testing & Troubleshooting Guide
+================================================================================
+
+This guide outlines how to run, test, and verify the SupplyGuard system in real-time, especially when installing the GitHub App on other GitHub accounts or repositories.
+
+--------------------------------------------------------------------------------
+1. PREREQUISITES & KEY CONFIGURATIONS
+--------------------------------------------------------------------------------
+Before testing in real-time, ensure the following configurations are set:
+
+A. GitHub App Permissions (Critical)
+   Go to your GitHub App Settings -> "Permissions & events" -> "Repository permissions":
+   - Contents: Read-only (Required to fetch package.json content)
+   - Metadata: Read-only (Required for basic integration info)
+   - Pull requests: Read & Write (Required to post comments on PRs)
+   
+   Under "Subscribe to events":
+   - Check "Pull request"
+   - Click "Save changes"
+
+B. Webhook Setup
+   - Start ngrok to expose port 8000:
+     ngrok http 8000
+   - Copy the public HTTPS URL (e.g., https://1234-abcd.ngrok-free.app).
+   - Go to your GitHub App Settings -> "General" -> "Webhook":
+     - Webhook URL: https://1234-abcd.ngrok-free.app/webhook
+     - Webhook Secret: Ensure it matches GITHUB_WEBHOOK_SECRET in your .env exactly.
+     - SSL Verification: Enabled.
+
+C. Environment Variables (.env)
+   Ensure the following are configured in your root `.env` file:
+   - GITHUB_APP_ID: Your exact GitHub App ID.
+   - GITHUB_PRIVATE_KEY_PATH: "./private-key.pem" (Make sure the downloaded .pem private key is in the project root and matches this app).
+   - GITHUB_WEBHOOK_SECRET: Your chosen webhook secret.
+   - GITHUB_TOKEN: A personal access token (PAT) as a fallback.
+   - MONGO_URI: Your MongoDB connection string.
+
+--------------------------------------------------------------------------------
+2. WHY PRs IN OTHER ACCOUNTS MIGHT NOT POST COMMENTS OR OUTPUTS
+--------------------------------------------------------------------------------
+If you install the app on a repository in another GitHub account and do not see comments:
+
+1. No "package.json" in the Repository Root:
+   The backend specifically checks the repository root for a "package.json" file. If the repository does not have "package.json" in the root, it cannot scan dependencies and exits.
+   
+2. No Dependency Changes in the PR:
+   The backend only runs scans if the Pull Request adds, removes, or modifies dependencies inside the "dependencies" or "devDependencies" keys of "package.json". If the PR only changes other files (e.g., README.md, code files), the backend prints:
+   "No new/changed dependencies in PR #xx"
+   and exits without posting a comment.
+
+3. Authentication Fallback Issues:
+   If the backend fails to load the private-key.pem or if GITHUB_APP_ID is wrong, it falls back to using the GITHUB_TOKEN (PAT) in your .env. If that PAT belongs to your account, it won't have permission to write comments on another user's private/public repositories, causing the comment API call to fail. Ensure your GITHUB_APP_ID and private-key.pem are perfectly matched so the app can authenticate using the installation ID.
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP REAL-TIME TESTING
+--------------------------------------------------------------------------------
+
+Step 1: Start your backend and frontend
+   - In terminal 1 (Backend):
+     venv\Scripts\activate
+     python -m uvicorn backend.main:app --reload --port 8000
+   - In terminal 2 (Frontend):
+     cd frontend
+     npm run dev
+
+Step 2: Start/Verify ngrok tunnel
+   - ngrok http 8000
+   - Confirm your GitHub App settings point to the active ngrok tunnel URL (with /webhook at the end).
+
+Step 3: Setup your test repository
+   - Go to the GitHub account where you want to test.
+   - Create or select a repository.
+   - IMPORTANT: Make sure there is a "package.json" file in the root of the repository on the main/default branch. E.g.,
+     {
+       "name": "test-repo",
+       "dependencies": {
+         "express": "^4.18.2"
+       }
+     }
+
+Step 4: Install the GitHub App
+   - Go to your GitHub App page -> "Install App".
+   - Install it on the target account and select the test repository.
+
+Step 5: Create a PR with dependency changes
+   - Clone the test repository to your machine (or edit files directly on GitHub).
+   - Create a new branch.
+   - Modify the "package.json" file to add or change a dependency. For example, add "lodash":
+     {
+       "name": "test-repo",
+       "dependencies": {
+         "express": "^4.18.2",
+         "lodash": "^4.17.21"
+       }
+     }
+   - Commit the change, push the branch, and open a Pull Request.
+
+Step 6: Monitor output & logs
+   - Check the backend terminal logs. You should see incoming webhook logs and the analysis pipeline executing.
+   - If successful, a detailed Markdown report will be commented on the PR page on GitHub within 10–30 seconds.
+   - Open http://localhost:5173 to verify that the scan result and dependency graph appear on the dashboard.
